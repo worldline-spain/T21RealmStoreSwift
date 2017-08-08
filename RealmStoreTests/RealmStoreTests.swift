@@ -23,16 +23,16 @@ class RealmStoreTests: XCTestCase {
     override func tearDown() {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
         super.tearDown()
-        self.realmStore.getRealm().beginWrite()
-        self.realmStore.getRealm().deleteAll()
-        try? self.realmStore.getRealm().commitWrite()
+        try! realmStore.realm().beginWrite()
+        try! realmStore.realm().deleteAll()
+        try! realmStore.realm().commitWrite()
     }
     
     func testInsertNewObjectsToTheDB() {
         
         let expectation = self.expectation(description: "Realm Transaction")
 
-        realmStore.executeWriteRealmBlock({ (realm) -> (Void) in
+        realmStore.write({ (realm) -> (Void) in
             
             //this part is executed in a background thread
             var user: User = realm.getOrCreateObject("A")
@@ -43,22 +43,24 @@ class RealmStoreTests: XCTestCase {
             
             user = realm.getOrCreateObject("C")
             user.name = "Name C"
-
+            
             user = realm.getOrCreateObject("D")
             user.name = "Name D"
             
-        },{(realm, error) -> (Void) in
+        }, { (result: RealmStoreResult<Void>) -> (Void) in
+            
             expectation.fulfill()
             
             //this part is executed in the calling thread (usually the main thread)
             //the following call fecth ALL the User objects from the DB
-            if error == nil {
-                let users: [User] = realm.getAllObjects()
-                print(users)
-                XCTAssert(users.count == 4)
-            } else {
+            guard let realm = result.realm else {
                 XCTFail()
+                return
             }
+            
+            let users: [User] = realm.getAllObjects()
+            print(users)
+            XCTAssert(users.count == 4)
         })
         
         self.waitForExpectations(timeout: 0.5, handler: nil)
@@ -68,7 +70,7 @@ class RealmStoreTests: XCTestCase {
         
         let expectation = self.expectation(description: "Realm Transaction")
         
-        realmStore.executeWriteRealmBlock({ (realm) -> (RealmStoreResult<[String]>) in
+        realmStore.write({ (realm) -> ([String]) in
             
             //this part is executed in a background thread
             var newUsersAdded = [User]()
@@ -92,22 +94,24 @@ class RealmStoreTests: XCTestCase {
             let primaryKeys: [String] = RealmStore.getPrimaryKeys(newUsersAdded)
             
             //we send the resulting primary keys to the calling thread block
-            return RealmStoreResult.success(primaryKeys)
+            return primaryKeys
             
-        },{(realm, results) -> (Void) in
+        },{ (result: RealmStoreResult<[String]>) -> (Void) in
             expectation.fulfill()
             // this part is executed in the calling thread (usually the main thread)
             // the following call fecth only the previously inserted Users in a background thread write block.
             // to fetch them it uses the results primary key's array from the background block
             
             //check if the save was done properly
-            if results.isSuccess {
-                let users: [User] = realm.getObjects(results.value!)
-                print(users)
-                XCTAssert(users.count == 4)
-            } else {
+            guard let realm = result.realm , let primaryKeys = result.value else {
                 XCTFail()
+                return
             }
+            
+            let users: [User] = realm.getObjects(primaryKeys)
+            print(users)
+            XCTAssert(users.count == 4)
+
         })
         
         self.waitForExpectations(timeout: 0.5, handler: nil)
@@ -118,7 +122,7 @@ class RealmStoreTests: XCTestCase {
         let expectation = self.expectation(description: "Realm Transaction")
         
         //add objects first
-        realmStore.executeWriteRealmBlock({ (realm) -> (Void) in
+        realmStore.write({ (realm) -> (Void) in
             
             //this part is executed in a background thread
             var user: User = realm.getOrCreateObject("A")
@@ -129,47 +133,55 @@ class RealmStoreTests: XCTestCase {
             user.name = "Name C"
             user = realm.getOrCreateObject("D")
             user.name = "Name D"
-        },{(realm, error) -> (Void) in
+            
+        },{(result: RealmStoreResult<Void>) -> (Void) in
             
             //this part is executed in the calling thread (usually the main thread)
             //the following call fecth ALL the User objects from the DB
-            if error == nil {
-                let users: [User] = realm.getAllObjects()
-                print(users)
-                XCTAssert(users.count == 4)
-                
-                //test the READ operation now
-                self.realmStore.executeReadRealmBlock({ (realm) -> ([String]) in
-                    
-                    //assume this is a complex query with a complex predicate
-                    let predicate = NSPredicate(format: "(name CONTAINS %@) OR (name CONTAINS %@)", "C", "D")
-                    let objects: [User] = realm.getAllObjects(predicate)
-                    
-                    //we accumulate the primary keys into an array, to perform
-                    let primaryKeys: [String] = RealmStore.getPrimaryKeys(objects)
-                    
-                    //we send the resulting primary keys to the calling thread block
-                    return primaryKeys
-                },{(realm, results) -> (Void) in
-                    expectation.fulfill()
-                    // this part is executed in the calling thread (usually the main thread)
-                    // the following call fecth only the previously fetched Users in a background thread write block.
-                    // to fetch them it uses the results primary key's array from the background block
-                    
-                    //check if the save was done properly
-                    let users: [User] = realm.getObjects(results)
-                    print(users)
-                    XCTAssert(users.count == 2) // [User C, User D]
-                })
-            } else {
+            guard let realm = result.realm else {
                 expectation.fulfill()
                 XCTFail()
+                return
             }
+            
+            let users: [User] = realm.getAllObjects()
+            print(users)
+            XCTAssert(users.count == 4)
+            
+            //test the READ operation now
+            self.realmStore.read({ (realm) -> ([String]) in
+                
+                //assume this is a complex query with a complex predicate
+                let predicate = NSPredicate(format: "(name CONTAINS %@) OR (name CONTAINS %@)", "C", "D")
+                let objects: [User] = realm.getAllObjects(predicate)
+                
+                //we accumulate the primary keys into an array, to perform
+                let primaryKeys: [String] = RealmStore.getPrimaryKeys(objects)
+                
+                //we send the resulting primary keys to the calling thread block
+                return primaryKeys
+                
+            },{(result: RealmStoreResult<[String]>) -> (Void) in
+                
+                expectation.fulfill()
+                // this part is executed in the calling thread (usually the main thread)
+                // the following call fecth only the previously fetched Users in a background thread write block.
+                // to fetch them it uses the results primary key's array from the background block
+                
+                guard let primaryKeys = result.value else {
+                    XCTFail()
+                    return
+                }
+                
+                //check if the save was done properly
+                let users: [User] = realm.getObjects(primaryKeys)
+                print(users)
+                XCTAssert(users.count == 2) // [User C, User D]
+            })
         })
         
         self.waitForExpectations(timeout: 0.5, handler: nil)
     }
-    
 }
 
 

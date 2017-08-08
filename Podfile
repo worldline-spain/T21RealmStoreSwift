@@ -9,8 +9,9 @@ target 'RealmStore' do
     #Dependencies for the primary target (the main app or the main library)
     use_frameworks!
 
-    pod 'T21SortingDescriptorSwift', '~>1.0.0'
-    pod 'RealmSwift', '~>2.2.0'
+    pod 'T21SortingDescriptorSwift'
+    pod 'RealmSwift', '~>2.9'
+    pod 'T21LoggerSwift'
 end
 
 post_install do |installer|

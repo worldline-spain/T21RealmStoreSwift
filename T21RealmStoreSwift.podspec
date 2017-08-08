@@ -11,7 +11,8 @@ Pod::Spec.new do |s|
   s.source_files  = "Classes", "src/**/*.{swift}"
   s.framework  = "Foundation"
   s.requires_arc = true
-  s.dependency "RealmSwift", "~>2.2.0"
-  s.dependency "T21SortingDescriptorSwift", "~>1.0.0"
+  s.dependency "RealmSwift", "~>2.9"
+  s.dependency "T21SortingDescriptorSwift", "~>2.0"
+  s.dependency "T21LoggerSwift"
 
 end
