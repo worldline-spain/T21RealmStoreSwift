@@ -1,6 +1,6 @@
 #T21RealmStore
 
-## Version 1.0.0
+## Version 2.0.0
 
 ### Creating a new Realm Store
 
