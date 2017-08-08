@@ -10,6 +10,10 @@ import UIKit
 import RealmSwift
 import T21SortingDescriptorSwift
 
+typealias PrimaryKey = String
+typealias NumberPrimaryKey = Int
+
+
 public class RealmStore {
     
     private var queue = OperationQueue()

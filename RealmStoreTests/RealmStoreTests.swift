@@ -70,7 +70,7 @@ class RealmStoreTests: XCTestCase {
         
         let expectation = self.expectation(description: "Realm Transaction")
         
-        realmStore.write({ (realm) -> ([String]) in
+        realmStore.write({ (realm) -> ([PrimaryKey]) in
             
             //this part is executed in a background thread
             var newUsersAdded = [User]()
@@ -91,12 +91,12 @@ class RealmStoreTests: XCTestCase {
             newUsersAdded.append(user)
             
             //we accumulate the primary keys into an array, to perform
-            let primaryKeys: [String] = RealmStore.getPrimaryKeys(newUsersAdded)
+            let primaryKeys: [PrimaryKey] = RealmStore.getPrimaryKeys(newUsersAdded)
             
             //we send the resulting primary keys to the calling thread block
             return primaryKeys
             
-        },{ (result: RealmStoreResult<[String]>) -> (Void) in
+        },{ (result: RealmStoreResult<[PrimaryKey]>) -> (Void) in
             expectation.fulfill()
             // this part is executed in the calling thread (usually the main thread)
             // the following call fecth only the previously inserted Users in a background thread write block.
@@ -149,19 +149,19 @@ class RealmStoreTests: XCTestCase {
             XCTAssert(users.count == 4)
             
             //test the READ operation now
-            self.realmStore.read({ (realm) -> ([String]) in
+            self.realmStore.read({ (realm) -> ([PrimaryKey]) in
                 
                 //assume this is a complex query with a complex predicate
                 let predicate = NSPredicate(format: "(name CONTAINS %@) OR (name CONTAINS %@)", "C", "D")
                 let objects: [User] = realm.getAllObjects(predicate)
                 
                 //we accumulate the primary keys into an array, to perform
-                let primaryKeys: [String] = RealmStore.getPrimaryKeys(objects)
+                let primaryKeys: [PrimaryKey] = RealmStore.getPrimaryKeys(objects)
                 
                 //we send the resulting primary keys to the calling thread block
                 return primaryKeys
                 
-            },{(result: RealmStoreResult<[String]>) -> (Void) in
+            },{(result: RealmStoreResult<[PrimaryKey]>) -> (Void) in
                 
                 expectation.fulfill()
                 // this part is executed in the calling thread (usually the main thread)
@@ -187,9 +187,9 @@ class RealmStoreTests: XCTestCase {
 
 public class User : Object {
     dynamic var name: String = ""
-    dynamic var uid: String = ""
+    dynamic var uid: PrimaryKey = ""
     
-    override public static func primaryKey() -> String? {
+    override public static func primaryKey() -> PrimaryKey? {
         return "uid"
     }
 }
