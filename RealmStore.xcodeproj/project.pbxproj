@@ -15,12 +15,13 @@
 		B9B402B11E26984D006165CE /* RealmStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B402B01E26984D006165CE /* RealmStoreTests.swift */; };
 		B9B402BD1E2698AC006165CE /* RealmStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B402BC1E2698AC006165CE /* RealmStore.swift */; };
 		B9B402BF1E2698D3006165CE /* RealmStoreResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B402BE1E2698D3006165CE /* RealmStoreResult.swift */; };
-		B9B402C11E2698F3006165CE /* RealmStoreError.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B402C01E2698F3006165CE /* RealmStoreError.swift */; };
 		B9B402FA1E269D49006165CE /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = B9B402F71E269D49006165CE /* LICENSE */; };
 		B9B402FB1E269D49006165CE /* Podfile in Resources */ = {isa = PBXBuildFile; fileRef = B9B402F81E269D49006165CE /* Podfile */; };
 		B9B402FE1E269E53006165CE /* T21RealmStoreSwift.podspec in Resources */ = {isa = PBXBuildFile; fileRef = B9B402FD1E269E53006165CE /* T21RealmStoreSwift.podspec */; };
 		B9B403091E27F143006165CE /* Realm.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9B403031E27EF0A006165CE /* Realm.framework */; };
 		B9B4030B1E27F143006165CE /* RealmSwift.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9B4030A1E27F143006165CE /* RealmSwift.framework */; };
+		B9C444981F39A1F8003B895B /* RealmStoreLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C444971F39A1F8003B895B /* RealmStoreLogger.swift */; };
+		B9C4449A1F39A2DE003B895B /* RealmStoreError.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C444991F39A2DE003B895B /* RealmStoreError.swift */; };
 		EA80470F127E1BE7B9A74C0C /* Pods_RealmStore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 685BD805C746607D20948DA5 /* Pods_RealmStore.framework */; };
 /* End PBXBuildFile section */
 
@@ -50,12 +51,13 @@
 		B9B402B21E26984D006165CE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B9B402BC1E2698AC006165CE /* RealmStore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RealmStore.swift; sourceTree = "<group>"; };
 		B9B402BE1E2698D3006165CE /* RealmStoreResult.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RealmStoreResult.swift; sourceTree = "<group>"; };
-		B9B402C01E2698F3006165CE /* RealmStoreError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RealmStoreError.swift; sourceTree = "<group>"; };
 		B9B402F71E269D49006165CE /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		B9B402F81E269D49006165CE /* Podfile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Podfile; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		B9B402FD1E269E53006165CE /* T21RealmStoreSwift.podspec */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = T21RealmStoreSwift.podspec; sourceTree = "<group>"; };
 		B9B403031E27EF0A006165CE /* Realm.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Realm.framework; path = "Build/Products/Debug-iphonesimulator/Realm/Realm.framework"; sourceTree = "<group>"; };
 		B9B4030A1E27F143006165CE /* RealmSwift.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = RealmSwift.framework; path = "Build/Products/Debug-iphonesimulator/RealmSwift/RealmSwift.framework"; sourceTree = "<group>"; };
+		B9C444971F39A1F8003B895B /* RealmStoreLogger.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RealmStoreLogger.swift; sourceTree = "<group>"; };
+		B9C444991F39A2DE003B895B /* RealmStoreError.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RealmStoreError.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -149,7 +151,8 @@
 			children = (
 				B9B402BC1E2698AC006165CE /* RealmStore.swift */,
 				B9B402BE1E2698D3006165CE /* RealmStoreResult.swift */,
-				B9B402C01E2698F3006165CE /* RealmStoreError.swift */,
+				B9C444991F39A2DE003B895B /* RealmStoreError.swift */,
+				B9C444971F39A1F8003B895B /* RealmStoreLogger.swift */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -273,7 +276,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		73DD157458626C0951793DE0 /* [CP] Embed Pods Frameworks */ = {
@@ -314,9 +317,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				B9B4029E1E26984D006165CE /* ViewController.swift in Sources */,
-				B9B402C11E2698F3006165CE /* RealmStoreError.swift in Sources */,
 				B9B4029C1E26984D006165CE /* AppDelegate.swift in Sources */,
+				B9C444981F39A1F8003B895B /* RealmStoreLogger.swift in Sources */,
 				B9B402BF1E2698D3006165CE /* RealmStoreResult.swift in Sources */,
+				B9C4449A1F39A2DE003B895B /* RealmStoreError.swift in Sources */,
 				B9B402BD1E2698AC006165CE /* RealmStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -20,100 +20,127 @@ public class RealmStore {
         self.configuration = configuration
     }
     
-    public func executeReadRealmBlock(_ readFunction: @escaping (_ realm: Realm) -> (Void), _ completionFunction: @escaping (_ realm: Realm) -> (Void)) {
-            executeReadRealmBlock(readFunction, completionFunction, self.queue)
+    public func read(_ readClosure: @escaping (_ realm: Realm) -> (Void), _ completionClosure: @escaping (_ realm: Realm) -> (Void)) {
+        read(readClosure, completionClosure, self.queue)
     }
     
-    public func executeReadRealmBlock(_ readFunction: @escaping (_ realm: Realm) -> (Void), _ completionFunction: @escaping (_ realm: Realm) -> (Void), _ queue: OperationQueue) {
+    public func read(_ readClosure: @escaping (_ realm: Realm) -> (Void), _ completionClosure: @escaping (_ realm: Realm) -> (Void), _ queue: OperationQueue) {
         let innerReadFunction = { (realm: Realm) -> (Void) in
-            readFunction(realm)
+            readClosure(realm)
         }
         let innerCompletionFunction = { (realm: Realm) -> (Void) in
-            completionFunction(realm)
+            completionClosure(realm)
         }
-        executeReadRealmBlock(innerReadFunction, innerCompletionFunction,queue)
+        read(innerReadFunction, innerCompletionFunction,queue)
     }
     
-    public func executeReadRealmBlock<BackgroundResultType>(_ readFunction: @escaping (_ realm: Realm) -> (BackgroundResultType), _ completionFunction: @escaping (_ realm: Realm, _ results: BackgroundResultType) -> (Void)) {
-        self.executeReadRealmBlock(readFunction, completionFunction,self.queue)
+    public func read<ResultFromBackgroundThread>(_ readClosure: @escaping (_ realm: Realm) -> (ResultFromBackgroundThread), _ completionClosure: @escaping ( _ result: RealmStoreResult<ResultFromBackgroundThread>) -> (Void)) {
+        read(readClosure, completionClosure,self.queue)
     }
     
-    public func executeReadRealmBlock<BackgroundResultType>(_ readFunction: @escaping (_ realm: Realm) -> (BackgroundResultType), _ completionFunction: @escaping (_ realm: Realm, _ results: BackgroundResultType) -> (Void), _ queue: OperationQueue) {
+    public func read<ResultFromBackgroundThread>(_ readClosure: @escaping (_ realm: Realm) -> (ResultFromBackgroundThread), _ completionClosure: @escaping ( _ result: RealmStoreResult<ResultFromBackgroundThread>) -> (Void), _ queue: OperationQueue) {
         let currentQueue = OperationQueue.current!
-        queue.addOperation {
-            let r = self.getRealm()
-            r.refresh()
-            let result: BackgroundResultType = readFunction(r)
-            currentQueue.addOperation {
-                let realm = self.getRealm()
-                realm.refresh()
-                completionFunction(realm,result)
+        queue.addOperation{
+            do {
+                let r = try self.realm()
+                r.refresh()
+                let result: ResultFromBackgroundThread = readClosure(r)
+                currentQueue.addOperation {
+                    do {
+                        let r = try self.realm()
+                        r.refresh()
+                        completionClosure(RealmStoreResult.success(result: result, realm: r))
+                    } catch let error {
+                        completionClosure(RealmStoreResult.failure(RealmStoreError.uninitializedStore(error: error)))
+                        NSLog("RealmStore can't get the Realm instance: \(error) ")
+                    }
+                }
+            } catch let error {
+                NSLog("RealmStore can't get the Realm instance: \(error) ")
             }
         }
     }
     
-    public func executeWriteRealmBlock(_ writeFunction: @escaping (_ realm: Realm) -> (Void), _ completionFunction: @escaping (_ realm: Realm, _ error: Error?) -> (Void)) {
-        executeWriteRealmBlock(writeFunction, completionFunction,self.queue)
+    public func write(_ writeClosure: @escaping (_ realm: Realm) -> (Void), _ completionClosure: @escaping (RealmStoreResult<Void>) -> (Void)) {
+        write(writeClosure, completionClosure,self.queue)
     }
     
-    public func executeWriteRealmBlock(_ writeFunction: @escaping (_ realm: Realm) -> (Void), _ completionFunction: @escaping (_ realm: Realm, _ error: Error?) -> (Void), _ queue: OperationQueue) {
-        let innerWriteFunction = { (realm: Realm) -> (RealmStoreResult<Bool>) in
-            writeFunction(realm)
-            return RealmStoreResult.success(true)
+    public func write(_ writeClosure: @escaping (_ realm: Realm) -> (Void), _ completionClosure: @escaping (RealmStoreResult<Void>) -> (Void), _ queue: OperationQueue) {
+        let innerWriteFunction = { (realm: Realm) -> (Bool) in
+            writeClosure(realm)
+            return true
         }
-        let innerCompletionFunction = { (realm: Realm, result: RealmStoreResult<Bool>) -> (Void) in
-           completionFunction(realm,result.error)
+        let innerCompletionFunction = { ( result: RealmStoreResult<Bool>) -> (Void) in
+            switch result {
+            case let .success(_, realm):
+                completionClosure(RealmStoreResult.success(result: (), realm: realm))
+                break
+            case let .failure(error):
+                completionClosure(RealmStoreResult.failure(error))
+                break
+            }
         }
-        executeWriteRealmBlock(innerWriteFunction, innerCompletionFunction)
+        write(innerWriteFunction, innerCompletionFunction)
     }
     
-    public func executeWriteRealmBlock<BackgroundResultType>(_ writeFunction: @escaping (_ realm: Realm) -> (RealmStoreResult<BackgroundResultType>), _ completionFunction: @escaping (_ realm: Realm, _ results: RealmStoreResult<BackgroundResultType>) -> (Void)) {
-        executeWriteRealmBlock(writeFunction, completionFunction,self.queue)
+    public func write<ResultFromBackgroundThread>(_ writeClosure: @escaping (_ realm: Realm) -> (ResultFromBackgroundThread), _ completionClosure: @escaping ( _ result: RealmStoreResult<ResultFromBackgroundThread>) -> (Void)) {
+        write(writeClosure, completionClosure,self.queue)
     }
     
-    public func executeWriteRealmBlock<BackgroundResultType>(_ writeFunction: @escaping (_ realm: Realm) -> (RealmStoreResult<BackgroundResultType>), _ completionFunction: @escaping (_ realm: Realm, _ results: RealmStoreResult<BackgroundResultType>) -> (Void), _ queue: OperationQueue) {
+    public func write<ResultFromBackgroundThread>(_ writeClosure: @escaping (_ realm: Realm) -> (ResultFromBackgroundThread), _ completionClosure: @escaping ( _ result: RealmStoreResult<ResultFromBackgroundThread>) -> (Void), _ queue: OperationQueue) {
         let currentQueue = OperationQueue.current!
         queue.addOperation {
-            let r = self.getRealm()
-            r.refresh()
-
-            let wasInWriteTransaction = r.isInWriteTransaction
-            if !wasInWriteTransaction {
-                r.beginWrite()
-            }
-            
-            var result: RealmStoreResult<BackgroundResultType> = writeFunction(r)
-            
-            if !wasInWriteTransaction {
-                do {
-                    try r.commitWrite()
-                } catch {
-                    result = RealmStoreResult.failure(RealmStoreError.saveError)
+            do {
+                let r = try self.realm()
+                r.refresh()
+                
+                let wasInWriteTransaction = r.isInWriteTransaction
+                if !wasInWriteTransaction {
+                    r.beginWrite()
+                }
+                
+                let result: ResultFromBackgroundThread = writeClosure(r)
+                
+                if !wasInWriteTransaction {
+                    do {
+                        try r.commitWrite()
+                        currentQueue.addOperation {
+                            do {
+                                let realm = try self.realm()
+                                realm.refresh()
+                                completionClosure(RealmStoreResult.success(result: result, realm: realm))
+                            } catch let error {
+                                RealmStoreLogger.error("Can't get the Realm instance: \(error) ")
+                                completionClosure(RealmStoreResult.failure(RealmStoreError.uninitializedStore(error: error)))
+                            }
+                        }
+                    } catch let error {
+                        RealmStoreLogger.error("Commit transaction failed: \(error) ")
+                        currentQueue.addOperation {
+                            completionClosure(RealmStoreResult.failure(RealmStoreError.saveError(error: error)))
+                        }
+                    }
+                }
+            } catch let error {
+                RealmStoreLogger.error("Can't get the Realm instance: \(error) ")
+                currentQueue.addOperation {
+                    completionClosure(RealmStoreResult.failure(RealmStoreError.uninitializedStore(error: error)))
                 }
             }
-            
-            currentQueue.addOperation {
-                let realm = self.getRealm()
-                realm.refresh()
-                completionFunction(realm,result)
-            }
         }
     }
     
-    open func getRealm() -> Realm {
-        var r: Realm? = nil
+    open func realm() throws -> Realm {
         do {
             if let conf = self.configuration {
-                r = try Realm.init(configuration: conf)
+                return try Realm(configuration: conf)
             } else {
-                r = try Realm.init()
+                return try Realm()
             }
-        } catch {
-            //todo: change with a proper logger tool
-            NSLog("ERROR: loading Realm stack")
+        } catch let error {
+            RealmStoreLogger.error("Loading Realm stack failed: \(error) ")
+            throw error
         }
-        return r! //todo: this can cause a crash... change getRealm to throwable function?
-        //if we make this function throwable, every executeReadBlock & executeWriteBlock will be throwable too
     }
 
     
@@ -213,7 +240,7 @@ extension RealmSwift.Realm {
             }
             
             if let descriptors = sortingDescriptors {
-                objects.sort(by: combine(sortDescriptors: descriptors))
+                objects.sort(by: CombineSortDescriptors(sortDescriptors: descriptors))
             }
             
             return objects

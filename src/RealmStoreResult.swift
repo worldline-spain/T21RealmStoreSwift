@@ -7,10 +7,11 @@
 //
 
 import Foundation
+import RealmSwift
 
 public enum RealmStoreResult<Value> {
-    case success(Value)
-    case failure(Error)
+    case success(result: Value, realm: Realm)
+    case failure(RealmStoreError)
     
     public var isSuccess: Bool {
         switch self {
@@ -28,7 +29,16 @@ public enum RealmStoreResult<Value> {
     public var value: Value? {
         switch self {
         case .success(let value):
-            return value
+            return value.result
+        case .failure:
+            return nil
+        }
+    }
+    
+    public var realm: Realm? {
+        switch self {
+        case .success(let value):
+            return value.realm
         case .failure:
             return nil
         }
