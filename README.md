@@ -47,7 +47,7 @@ public class User : Object {
 
 
 ```
-realmStore.executeWriteRealmBlock({ (realm) -> (Void) in
+realmStore.write({ (realm) -> (Void) in
     
     //this part is executed in a background thread
     //assume this is a very time consuming task
@@ -63,13 +63,15 @@ realmStore.executeWriteRealmBlock({ (realm) -> (Void) in
     user = realm.getOrCreateObject("D")
     user.name = "Name D"
     
-},{(realm, error) -> (Void) in
+},{(result: RealmStoreResult<Void>) -> (Void) in
     
     //this part is executed in the calling thread (usually the main thread)
-    //the following call fecth ALL the User objects from the DB	    if error == nil {
+    //the following call fecth ALL the User objects from the DB
+    if let realm = result.realm {
         let users: [User] = realm.getAllObjects()
         print(users)
     } else {
+      		// manage the error
     }
 })
 
@@ -85,7 +87,7 @@ Another important feature is that the RealmStore write blocks can be nested, bec
 The following example is very similar to the previous one, but this time, we will assume that the insertion process is a very expensive operation. Our solution will be to add the new users in a background thread to avoid blocking the main thread and then, fetch all the created objects in the main thread using the primary keys.
 
 ```                
-realmStore.executeWriteRealmBlock({ (realm) -> (RealmStoreResult<[String]>) in
+realmStore.write({ (realm) -> ([String]) in
     
     //this part is executed in a background thread
     var newUsersAdded = [User]()
@@ -109,19 +111,20 @@ realmStore.executeWriteRealmBlock({ (realm) -> (RealmStoreResult<[String]>) in
     let primaryKeys: [String] = RealmStore.getPrimaryKeys(newUsersAdded)
     
     //we send the resulting primary keys to the calling thread block
-    return RealmStoreResult.success(primaryKeys)
+    return primaryKeys
     
-},{(realm, results) -> (Void) in
+},{(result: RealmStoreResult<[String]>) -> (Void) in
     
     // this part is executed in the calling thread (usually the main thread)
     // the following call fecth only the previously inserted Users in a background thread write block.
     // to fetch them it uses the results primary key's array from the background block
     
     //check if the save was done properly
-    if results.isSuccess {
-        let users: [User] = realm.getObjects(results.value!)
+    if let realm = result.realm, let primaryKeys = result.value {
+        let users: [User] = realm.getObjects(primaryKeys)
         print(users)
     } else {
+    	 // manage the error
     }
 })
         
@@ -131,14 +134,14 @@ At first glance it can seem a little bit stupid having to create the extra array
 
 ### Performing a complex query on a background thread
 
-In the case of read operations (querying the DB) RealmStore offers different `executeReadRealmBlock` methods.
+In the case of read operations (querying the DB) RealmStore offers different `read` methods.
 
 The following example shows how to perform a query using the RealmStore.
 
 ```
 //DB Contains Users with the following names: ["Name A", "Name B", "Name C", "Name D"]
 
-self.realmStore.executeReadRealmBlock({ (realm) -> ([String]) in
+self.realmStore.read({ (realm) -> ([String]) in
     
     //assume this is a complex query with a complex predicate
     let predicate = NSPredicate(format: "(name CONTAINS %@) OR (name CONTAINS %@)", "C", "D")
@@ -149,14 +152,18 @@ self.realmStore.executeReadRealmBlock({ (realm) -> ([String]) in
     
     //we send the resulting primary keys to the calling thread block
     return primaryKeys
-},{(realm, results) -> (Void) in
+},{(result: RealmStoreResult<[String]>) -> (Void) in
     // this part is executed in the calling thread (usually the main thread)
     // the following call fecth only the previously fetched Users in a background thread write block.
     // to fetch them it uses the results primary key's array from the background block
     
     //check if the save was done properly
-    let users: [User] = realm.getObjects(results)
-    print(users)
+    if let realm = result.realm, let primaryKeys = result.value {
+        let users: [User] = realm.getObjects(primaryKeys)
+        print(users)
+    } else {
+    	 // manage the error
+    }
 })
 
 ```
