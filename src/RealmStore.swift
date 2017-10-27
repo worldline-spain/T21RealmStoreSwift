@@ -208,7 +208,7 @@ public class RealmStore {
         return pk
     }
     
-    public static func getPrimaryKeys<ClassType: Object, KeyType>(_ objects: RealmSwift.Results<ClassType>) -> Array<KeyType> {
+    public static func getPrimaryKeys<ClassType, KeyType>(_ objects: RealmSwift.Results<ClassType>) -> Array<KeyType> {
         var pk = Array<KeyType>()
         pk.reserveCapacity(objects.count)
         for o in objects {
