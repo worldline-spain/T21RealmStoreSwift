@@ -186,8 +186,8 @@ class RealmStoreTests: XCTestCase {
 
 
 public class User : Object {
-    dynamic var name: String = ""
-    dynamic var uid: PrimaryKey = ""
+    @objc dynamic var name: String = ""
+    @objc dynamic var uid: PrimaryKey = ""
     
     override public static func primaryKey() -> PrimaryKey? {
         return "uid"
